@@ -1,11 +1,12 @@
 import { Transform } from 'class-transformer';
-import { Matches, MaxLength, MinLength } from 'class-validator';
-
-enum Rol {
-  ADMIN,
-  OPERADOR,
-  LECTOR,
-}
+import {
+  IsEnum,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
+import { Rol } from '../../generated/prisma/enums';
 
 export class CreateUsuarioDto {
   @MaxLength(72, {
@@ -14,6 +15,7 @@ export class CreateUsuarioDto {
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim() : value,
   )
+  @IsString()
   @Matches(/\S/, {
     message: 'El texto no puede estar vacío ni contener solo espacios',
   })
@@ -25,16 +27,14 @@ export class CreateUsuarioDto {
   @MaxLength(72, {
     message: 'La contraseña no puede superar los 72 caracteres',
   })
-  @Transform(({ value }: { value: unknown }) =>
-    typeof value === 'string' ? value.trim() : value,
-  )
+  @IsString()
   @Matches(/\S/, {
     message: 'El texto no puede estar vacío ni contener solo espacios',
   })
   password!: string;
 
-  @Matches(/\S/, {
-    message: 'El texto no puede estar vacío ni contener solo espacios',
+  @IsEnum(Rol, {
+    message: 'El rol debe ser ADMIN, OPERADOR o LECTOR',
   })
   rol!: Rol;
 }

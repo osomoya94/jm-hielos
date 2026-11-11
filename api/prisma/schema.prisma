@@ -38,10 +38,131 @@ enum Rol {
 }
 
 model Usuario {
-  id           String   @id @default(uuid())
-  username     String   @unique
+  id           String    @id @default(uuid())
+  username     String    @unique
   passwordHash String
   rol          Rol
-  activo       Boolean  @default(true)
+  activo       Boolean   @default(true)
   ultimoAcceso DateTime?
+
+  movimientos MovimientoFinanciero[]
+
+  operacionesFinancieras OperacionFinanciera[]
+}
+
+enum TipoCuentaFinanciera {
+  EFECTIVO
+  BANCO
+  BILLETERA
+  INVERSION
+}
+
+enum TipoMovimiento {
+  INGRESO
+  EGRESO
+}
+
+model CuentaFinanciera {
+  id             String               @id @default(uuid())
+  tipo           TipoCuentaFinanciera
+  nombre         String               @unique
+  moneda         String               @default("ARS")
+  titularInterno String
+  saldoInicial   Decimal              @db.Decimal(18, 2)
+  fechaApertura  DateTime
+  activo         Boolean              @default(true)
+
+  movimientos MovimientoFinanciero[]
+}
+
+enum ClaseMovimiento {
+  FLUJO_EXTERNO
+  TRANSFERENCIA_INTERNA
+  AJUSTE_SIN_FLUJO
+}
+
+model MovimientoFinanciero {
+  id            String          @id @default(uuid())
+  sentido       TipoMovimiento
+  importe       Decimal         @db.Decimal(18, 2)
+  clase         ClaseMovimiento
+  fechaEfectiva DateTime
+  fechaRegistro DateTime        @default(now())
+  detalle       String
+
+  cuentaId String
+  cuenta   CuentaFinanciera @relation(fields: [cuentaId], references: [id])
+
+  usuarioId String
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  categoriaId String?
+  categoria   CategoriaFlujo? @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+
+  operacionId String
+  operacion   OperacionFinanciera @relation(fields: [operacionId], references: [id])
+
+  @@index([cuentaId, fechaEfectiva])
+  @@index([operacionId])
+}
+
+enum GrupoFlujo {
+  OPERACION
+  INVERSION_ACTIVOS
+  FINANCIACION
+  APORTES
+  RETIROS
+  GARANTIAS
+  OTROS
+}
+
+model CategoriaFlujo {
+  id      String         @id @default(uuid())
+  nombre  String
+  grupo   GrupoFlujo
+  sentido TipoMovimiento
+  activo  Boolean        @default(true)
+
+  movimientos MovimientoFinanciero[]
+
+  @@unique([grupo, sentido, nombre])
+}
+
+enum TipoOperacionFinanciera {
+  COBRO
+  PAGO
+  TRANSFERENCIA
+  AJUSTE
+  REVERSION
+  REEMBOLSO
+}
+
+model OperacionFinanciera {
+  id                String                  @id @default(uuid())
+  claveIdempotencia String                  @unique
+  tipo              TipoOperacionFinanciera
+  origenTipo        String?
+  origenId          String?
+  fechaRegistro     DateTime                @default(now())
+  motivo            String?
+  referencia        String?
+
+  usuarioId String
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  movimientos MovimientoFinanciero[]
+
+  reversionDeId String?              @unique
+  reversionDe   OperacionFinanciera? @relation("ReversionOperacion", fields: [reversionDeId], references: [id])
+  revertidaPor  OperacionFinanciera? @relation("ReversionOperacion")
+}
+
+model Proveedor {
+  id            String  @id @default(uuid())
+  nombre        String
+  cuit          String? @unique
+  telefono      String?
+  direccion     String?
+  observaciones String?
+  activo        Boolean @default(true)
 }
