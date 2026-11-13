@@ -34,10 +34,12 @@ Necesitás Docker Desktop iniciado, Node y las dependencias instaladas, configur
 
 Se usa npm.cmd para evitar el bloqueo de npm.ps1 de PowerShell.
 
+Reemplazá `C:\ruta\jm-hielos` por la ubicación local del repositorio.
+
 Terminal 1, PostgreSQL:
 
 ~~~powershell
-Set-Location 'C:\Users\Emanuel Moya\Desktop\jm-hielos'
+Set-Location 'C:\ruta\jm-hielos'
 docker compose up -d db
 docker compose ps db
 ~~~
@@ -47,7 +49,7 @@ El compose existente publica PostgreSQL en 127.0.0.1:5433. Conserva el volumen e
 Terminal 2, API:
 
 ~~~powershell
-Set-Location 'C:\Users\Emanuel Moya\Desktop\jm-hielos\api'
+Set-Location 'C:\ruta\jm-hielos\api'
 npm.cmd ci
 npx.cmd prisma generate --config prisma7.config.ts
 npx.cmd prisma migrate status --config prisma7.config.ts
@@ -67,7 +69,7 @@ No aplicar ese comando a ciegas en una base con historial: la migración existen
 Terminal 3, frontend:
 
 ~~~powershell
-Set-Location 'C:\Users\Emanuel Moya\Desktop\jm-hielos\web'
+Set-Location 'C:\ruta\jm-hielos\web'
 npm.cmd ci
 npm.cmd run dev
 ~~~
@@ -203,13 +205,13 @@ Resultados y límites de esta entrega:
 Comandos de verificación:
 
 ~~~powershell
-Set-Location 'C:\Users\Emanuel Moya\Desktop\jm-hielos\api'
+Set-Location 'C:\ruta\jm-hielos\api'
 npm.cmd test -- --runInBand
 npm.cmd run test:e2e -- --runInBand
 npm.cmd run build
 npm.cmd run lint -- --fix=false --ignore-pattern 'src/generated/**'
 
-Set-Location 'C:\Users\Emanuel Moya\Desktop\jm-hielos\web'
+Set-Location 'C:\ruta\jm-hielos\web'
 npm.cmd test
 npm.cmd run build
 npm.cmd run lint

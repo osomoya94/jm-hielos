@@ -13,22 +13,32 @@ datasource db {
 }
 
 model Producto {
-  id     String  @id @default(uuid())
-  nombre String
-  pesoKg Int
-  unidad String
-  activo Boolean @default(true)
+  id               String            @id @default(uuid())
+  nombre           String
+  pesoKg           Int
+  unidad           String
+  activo           Boolean           @default(true)
+  insumos          Insumo[]
+  lotes            LoteProduccion[]
+  stock            StockTerminado?
+  movimientosStock MovimientoStock[]
+  preciosLista     PrecioLista[]
+  preciosCliente   PrecioCliente[]
+  detallesVenta    DetalleVenta[]
 }
 
 model Cliente {
-  id            String  @id @default(uuid())
-  nombre        String
-  telefono      String?
-  direccion     String?
-  referencia    String?
-  tipoCliente   String
-  observaciones String?
-  activo        Boolean @default(true)
+  id                  String            @id @default(uuid())
+  nombre              String
+  telefono            String?
+  direccion           String?
+  referencia          String?
+  tipoCliente         String
+  observaciones       String?
+  activo              Boolean           @default(true)
+  condicionComercial  CondicionCliente?
+  preciosParticulares PrecioCliente[]
+  ventas              Venta[]
 }
 
 enum Rol {
@@ -48,6 +58,13 @@ model Usuario {
   movimientos MovimientoFinanciero[]
 
   operacionesFinancieras OperacionFinanciera[]
+  operacionesInventario  OperacionInventario[]
+  lotesResponsable       LoteProduccion[]         @relation("ResponsableLote")
+  participaciones        ProduccionParticipante[]
+  operacionesComerciales OperacionComercial[]
+  participacionesVenta   ParticipanteVenta[]
+  ventasSeguimiento      Venta[]                  @relation("SeguimientoVenta")
+  cambiosComerciales     AuditoriaComercial[]
 }
 
 enum TipoCuentaFinanciera {
@@ -155,14 +172,349 @@ model OperacionFinanciera {
   reversionDeId String?              @unique
   reversionDe   OperacionFinanciera? @relation("ReversionOperacion", fields: [reversionDeId], references: [id])
   revertidaPor  OperacionFinanciera? @relation("ReversionOperacion")
+  pagoCompra    PagoCompraInsumo?
+  cobroVenta    CobroVenta?
 }
 
 model Proveedor {
-  id            String  @id @default(uuid())
+  id            String         @id @default(uuid())
   nombre        String
-  cuit          String? @unique
+  cuit          String?        @unique
   telefono      String?
   direccion     String?
   observaciones String?
-  activo        Boolean @default(true)
+  activo        Boolean        @default(true)
+  compras       CompraInsumo[]
+}
+
+enum TipoInsumo {
+  BOLSA
+  OTRO
+}
+
+enum UbicacionInsumo {
+  DEPOSITO
+  PRODUCCION
+}
+
+enum TipoOperacionInventario {
+  COMPRA
+  PAGO_COMPRA
+  TRASLADO
+  PRODUCCION
+  CONSUMO
+  PERDIDA
+  DEVOLUCION_PROVEEDOR
+  DEVOLUCION
+  OBSEQUIO
+  CONSUMO_INTERNO
+  AJUSTE
+  CONTEO
+  VENTA
+}
+
+model Insumo {
+  id             String               @id @default(uuid())
+  nombre         String               @unique
+  tipo           TipoInsumo
+  unidad         String
+  stockMinimo    Decimal              @db.Decimal(18, 3)
+  activo         Boolean              @default(true)
+  productoId     String?
+  producto       Producto?            @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  presentaciones PresentacionInsumo[]
+}
+
+model PresentacionInsumo {
+  id          String                @id @default(uuid())
+  insumoId    String
+  insumo      Insumo                @relation(fields: [insumoId], references: [id], onDelete: Restrict)
+  nombre      String
+  factor      Decimal               @db.Decimal(18, 3)
+  activo      Boolean               @default(true)
+  existencias ExistenciaInsumo[]
+  movimientos MovimientoInsumo[]
+  compras     DetalleCompraInsumo[]
+
+  @@unique([insumoId, nombre])
+}
+
+model ExistenciaInsumo {
+  id             String             @id @default(uuid())
+  presentacionId String
+  presentacion   PresentacionInsumo @relation(fields: [presentacionId], references: [id], onDelete: Restrict)
+  ubicacion      UbicacionInsumo
+  unidades       Decimal            @default(0) @db.Decimal(18, 3)
+  valor          Decimal            @default(0) @db.Decimal(24, 6)
+
+  @@unique([presentacionId, ubicacion])
+}
+
+model OperacionInventario {
+  id                 String                  @id @default(uuid())
+  claveIdempotencia  String                  @unique
+  huella             String
+  tipo               TipoOperacionInventario
+  fechaEfectiva      DateTime
+  fechaRegistro      DateTime                @default(now())
+  motivo             String
+  origenTipo         String
+  origenId           String
+  usuarioId          String
+  usuario            Usuario                 @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  resultado          Json?
+  corrigeOperacionId String?
+  corrigeOperacion   OperacionInventario?    @relation("CorreccionInventario", fields: [corrigeOperacionId], references: [id], onDelete: Restrict)
+  correcciones       OperacionInventario[]   @relation("CorreccionInventario")
+  movimientosInsumos MovimientoInsumo[]
+  movimientosStock   MovimientoStock[]
+  compra             CompraInsumo?
+  pago               PagoCompraInsumo?
+  lote               LoteProduccion?
+
+  @@unique([origenTipo, origenId])
+  @@index([fechaEfectiva, tipo])
+}
+
+model MovimientoInsumo {
+  id             String              @id @default(uuid())
+  operacionId    String
+  operacion      OperacionInventario @relation(fields: [operacionId], references: [id], onDelete: Restrict)
+  presentacionId String
+  presentacion   PresentacionInsumo  @relation(fields: [presentacionId], references: [id], onDelete: Restrict)
+  ubicacion      UbicacionInsumo
+  unidades       Decimal             @db.Decimal(18, 3)
+  valor          Decimal             @db.Decimal(24, 6)
+  saldoPosterior Decimal             @db.Decimal(18, 3)
+  detalle        String
+
+  @@index([presentacionId, ubicacion])
+  @@index([operacionId])
+}
+
+model CompraInsumo {
+  id          String                @id @default(uuid())
+  operacionId String                @unique
+  operacion   OperacionInventario   @relation(fields: [operacionId], references: [id], onDelete: Restrict)
+  proveedorId String
+  proveedor   Proveedor             @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
+  comprobante String
+  total       Decimal               @db.Decimal(18, 2)
+  pagado      Decimal               @default(0) @db.Decimal(18, 2)
+  vencimiento DateTime?
+  detalles    DetalleCompraInsumo[]
+  pagos       PagoCompraInsumo[]
+
+  @@unique([proveedorId, comprobante])
+}
+
+model DetalleCompraInsumo {
+  id             String             @id @default(uuid())
+  compraId       String
+  compra         CompraInsumo       @relation(fields: [compraId], references: [id], onDelete: Restrict)
+  presentacionId String
+  presentacion   PresentacionInsumo @relation(fields: [presentacionId], references: [id], onDelete: Restrict)
+  paquetes       Int
+  factor         Decimal            @db.Decimal(18, 3)
+  costoTotal     Decimal            @db.Decimal(18, 2)
+
+  @@unique([compraId, presentacionId])
+}
+
+model PagoCompraInsumo {
+  id                    String              @id @default(uuid())
+  compraId              String
+  compra                CompraInsumo        @relation(fields: [compraId], references: [id], onDelete: Restrict)
+  operacionId           String              @unique
+  operacion             OperacionInventario @relation(fields: [operacionId], references: [id], onDelete: Restrict)
+  operacionFinancieraId String              @unique
+  operacionFinanciera   OperacionFinanciera @relation(fields: [operacionFinancieraId], references: [id], onDelete: Restrict)
+  importe               Decimal             @db.Decimal(18, 2)
+}
+
+model LoteProduccion {
+  id                String                   @id @default(uuid())
+  codigo            String                   @unique
+  operacionId       String                   @unique
+  operacion         OperacionInventario      @relation(fields: [operacionId], references: [id], onDelete: Restrict)
+  productoId        String
+  producto          Producto                 @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  responsableId     String
+  responsable       Usuario                  @relation("ResponsableLote", fields: [responsableId], references: [id], onDelete: Restrict)
+  participantes     ProduccionParticipante[]
+  bolsasUsadas      Int
+  bolsasRotas       Int
+  cantidadApta      Int
+  cantidadEsperada  Int?
+  hieloDescartadoKg Decimal                  @db.Decimal(18, 3)
+}
+
+model ProduccionParticipante {
+  id        String         @id @default(uuid())
+  loteId    String
+  lote      LoteProduccion @relation(fields: [loteId], references: [id], onDelete: Restrict)
+  usuarioId String
+  usuario   Usuario        @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  @@unique([loteId, usuarioId])
+}
+
+model StockTerminado {
+  productoId String   @id
+  producto   Producto @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  cantidad   Int      @default(0)
+}
+
+model MovimientoStock {
+  id             String              @id @default(uuid())
+  operacionId    String
+  operacion      OperacionInventario @relation(fields: [operacionId], references: [id], onDelete: Restrict)
+  productoId     String
+  producto       Producto            @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  cantidad       Int
+  saldoAnterior  Int
+  saldoPosterior Int
+
+  @@index([productoId, operacionId])
+}
+
+enum TipoListaPrecio {
+  MINORISTA
+  MAYORISTA
+  ESPECIAL
+  EVENTOS
+}
+
+model ListaPrecio {
+  id       String             @id @default(uuid())
+  nombre   String             @unique
+  tipo     TipoListaPrecio
+  activo   Boolean            @default(true)
+  precios  PrecioLista[]
+  clientes CondicionCliente[]
+}
+
+model PrecioLista {
+  listaId    String
+  lista      ListaPrecio @relation(fields: [listaId], references: [id], onDelete: Restrict)
+  productoId String
+  producto   Producto    @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  precio     Decimal     @db.Decimal(18, 2)
+
+  @@id([listaId, productoId])
+}
+
+model CondicionCliente {
+  clienteId       String      @id
+  cliente         Cliente     @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  listaId         String
+  lista           ListaPrecio @relation(fields: [listaId], references: [id], onDelete: Restrict)
+  consumidorFinal Boolean     @default(false)
+}
+
+model PrecioCliente {
+  clienteId  String
+  cliente    Cliente  @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  productoId String
+  producto   Producto @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  precio     Decimal  @db.Decimal(18, 2)
+  activo     Boolean  @default(true)
+
+  @@id([clienteId, productoId])
+}
+
+model AuditoriaComercial {
+  id            String   @id @default(uuid())
+  usuarioId     String
+  usuario       Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  fechaRegistro DateTime @default(now())
+  entidad       String
+  entidadId     String
+  accion        String
+  motivo        String
+  anterior      Json?
+  posterior     Json?
+
+  @@index([fechaRegistro, entidad])
+}
+
+model OperacionComercial {
+  id                String      @id @default(uuid())
+  claveIdempotencia String      @unique
+  huella            String
+  tipo              String
+  usuarioId         String
+  usuario           Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  fechaRegistro     DateTime    @default(now())
+  resultado         Json?
+  venta             Venta?
+  cobro             CobroVenta?
+}
+
+enum EstadoVenta {
+  CONFIRMADA
+  ANULADA
+}
+
+model Venta {
+  id                    String              @id @default(uuid())
+  operacionId           String              @unique
+  operacion             OperacionComercial  @relation(fields: [operacionId], references: [id], onDelete: Restrict)
+  clienteId             String
+  cliente               Cliente             @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  fechaPedido           DateTime
+  fechaEntrega          DateTime
+  fechaRegistro         DateTime            @default(now())
+  envio                 Decimal             @default(0) @db.Decimal(18, 2)
+  total                 Decimal             @db.Decimal(18, 2)
+  estado                EstadoVenta         @default(CONFIRMADA)
+  responsableCobranzaId String
+  responsableCobranza   Usuario             @relation("SeguimientoVenta", fields: [responsableCobranzaId], references: [id], onDelete: Restrict)
+  detalles              DetalleVenta[]
+  participantes         ParticipanteVenta[]
+  cobros                CobroVenta[]
+
+  @@index([clienteId, fechaEntrega])
+}
+
+model DetalleVenta {
+  id             String   @id @default(uuid())
+  ventaId        String
+  venta          Venta    @relation(fields: [ventaId], references: [id], onDelete: Restrict)
+  productoId     String
+  producto       Producto @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  nombreProducto String
+  pesoKg         Int
+  cantidad       Int
+  precioUnitario Decimal  @db.Decimal(18, 2)
+  costoUnitario  Decimal? @db.Decimal(24, 6)
+  estadoCosto    String   @default("PENDIENTE")
+  origenPrecio   String
+
+  @@unique([ventaId, productoId])
+}
+
+model ParticipanteVenta {
+  id          String  @id @default(uuid())
+  ventaId     String
+  venta       Venta   @relation(fields: [ventaId], references: [id], onDelete: Restrict)
+  usuarioId   String
+  usuario     Usuario @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  tarea       String
+  responsable Boolean
+
+  @@unique([ventaId, tarea, usuarioId])
+}
+
+model CobroVenta {
+  id                    String              @id @default(uuid())
+  ventaId               String
+  venta                 Venta               @relation(fields: [ventaId], references: [id], onDelete: Restrict)
+  operacionId           String              @unique
+  operacion             OperacionComercial  @relation(fields: [operacionId], references: [id], onDelete: Restrict)
+  operacionFinancieraId String              @unique
+  operacionFinanciera   OperacionFinanciera @relation(fields: [operacionFinancieraId], references: [id], onDelete: Restrict)
+  importe               Decimal             @db.Decimal(18, 2)
+
+  @@index([ventaId])
 }

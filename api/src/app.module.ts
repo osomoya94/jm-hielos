@@ -12,6 +12,9 @@ import { CuentasFinancierasModule } from './cuentas-financieras/cuentas-financie
 import { CategoriasFlujoModule } from './categorias-flujo/categorias-flujo.module';
 import { OperacionesFinancierasModule } from './operaciones-financieras/operaciones-financieras.module';
 import { CashFlowModule } from './cash-flow/cash-flow.module';
+import { InventarioModule } from './inventario/inventario.module';
+import { PreciosModule } from './precios/precios.module';
+import { VentasModule } from './ventas/ventas.module';
 
 @Module({
   imports: [
@@ -26,6 +29,9 @@ import { CashFlowModule } from './cash-flow/cash-flow.module';
     CategoriasFlujoModule,
     OperacionesFinancierasModule,
     CashFlowModule,
+    InventarioModule,
+    PreciosModule,
+    VentasModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,9 +1,11 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { esConflictoTransaccion } from '../prisma/conflicto-transaccion';
 import { CreateProductoDto } from './dto/crear-producto.dto';
 import { UpdateProductoDto } from './dto/editar-producto.dto';
 import { CambiarEstadoDto } from './dto/cambiar-estado-producto.dto';
@@ -72,6 +74,47 @@ export class ProductosService {
     }
 
     const { nombre, pesoKg, unidad } = updateProductoDto;
+
+    const cambiaPresentacion =
+      (pesoKg !== undefined && pesoKg !== productoExiste.pesoKg) ||
+      (unidad !== undefined && unidad !== productoExiste.unidad);
+    if (cambiaPresentacion) {
+      try {
+        return await this.prismaService.$transaction(
+          async (tx) => {
+            // Se relee dentro de la transacción que consulta el historial.
+            const actual = await tx.producto.findUnique({ where: { id } });
+            if (!actual) throw new NotFoundException('Producto no encontrado');
+            if (!actual.activo)
+              throw new BadRequestException('El producto está inactivo');
+            const insumos = await tx.insumo.count({
+              where: { productoId: id },
+            });
+            const movimientos = await tx.movimientoStock.count({
+              where: { productoId: id },
+            });
+            if (insumos || movimientos) {
+              throw new BadRequestException(
+                'No se puede cambiar peso ni unidad de un producto vinculado al inventario. Creá otro producto para la nueva presentación',
+              );
+            }
+            const producto = await tx.producto.update({
+              where: { id },
+              data: { nombre, pesoKg, unidad },
+            });
+            return { ...producto, message: 'Producto editado con exito' };
+          },
+          { isolationLevel: 'Serializable' },
+        );
+      } catch (error: unknown) {
+        if (esConflictoTransaccion(error)) {
+          throw new ConflictException(
+            'El inventario cambió durante la edición. Reintentá la modificación',
+          );
+        }
+        throw error;
+      }
+    }
 
     const producto = await this.prismaService.producto.update({
       where: { id },

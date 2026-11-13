@@ -5,6 +5,7 @@ import { App } from 'supertest/types';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductosController } from './productos.controller';
 import { ProductosService } from './productos.service';
+import type { Prisma } from '../generated/prisma/client';
 
 // Las pruebas usan un Prisma simulado y no se conectan a la base de datos.
 jest.mock('../prisma/prisma.service', () => ({ PrismaService: jest.fn() }));
@@ -19,6 +20,12 @@ describe('ProductosController', () => {
     activo: true,
   };
   const prismaService = {
+    $transaction: jest.fn(
+      async (fn: (tx: Prisma.TransactionClient) => Promise<unknown>) =>
+        fn(clienteTransaccion()),
+    ),
+    insumo: { count: jest.fn() },
+    movimientoStock: { count: jest.fn() },
     producto: {
       findMany: jest.fn(),
       findUnique: jest.fn(),
@@ -26,6 +33,9 @@ describe('ProductosController', () => {
       update: jest.fn(),
     },
   };
+  function clienteTransaccion(): Prisma.TransactionClient {
+    return prismaService as unknown as Prisma.TransactionClient;
+  }
   const limitesTexto = [
     ['nombre', 100],
     ['unidad', 30],
@@ -33,6 +43,8 @@ describe('ProductosController', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    prismaService.insumo.count.mockResolvedValue(0);
+    prismaService.movimientoStock.count.mockResolvedValue(0);
     prismaService.producto.findMany.mockResolvedValue([producto]);
     prismaService.producto.findUnique.mockResolvedValue(producto);
     prismaService.producto.create.mockResolvedValue(producto);
@@ -59,6 +71,27 @@ describe('ProductosController', () => {
 
   afterEach(async () => {
     await app.close();
+  });
+
+  it.each(['insumo', 'movimientoStock'] as const)(
+    'protege el peso cuando existe historial en %s',
+    async (modelo) => {
+      prismaService[modelo].count.mockResolvedValue(1);
+      await request(app.getHttpServer())
+        .patch('/productos/' + producto.id)
+        .send({ pesoKg: 10 })
+        .expect(400);
+      expect(prismaService.producto.update).not.toHaveBeenCalled();
+    },
+  );
+
+  it('no bloquea renombrar un producto vinculado al inventario', async () => {
+    prismaService.insumo.count.mockResolvedValue(1);
+    await request(app.getHttpServer())
+      .patch('/productos/' + producto.id)
+      .send({ nombre: 'Nuevo nombre' })
+      .expect(200);
+    expect(prismaService.producto.update).toHaveBeenCalled();
   });
 
   it('crea un producto valido', async () => {
