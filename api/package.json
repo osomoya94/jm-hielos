@@ -17,13 +17,19 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "qa:preparar": "node scripts/postgres-qa.mjs --solo-preparar",
+    "test:postgres": "node scripts/postgres-qa.mjs",
+    "test:web:qa": "node scripts/comercial-browser-qa.mjs",
+    "demo:qa": "npm run build && node scripts/comercial-browser-qa.mjs --presentacion"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^12.0.1",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/jwt": "^12.0.3",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/throttler": "6.7.1",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "axios": "^1.20.0",
@@ -71,8 +77,18 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.(t|j)s$": [
+        "ts-jest",
+        {
+          "tsconfig": {
+            "allowJs": true
+          }
+        }
+      ]
     },
+    "transformIgnorePatterns": [
+      "node_modules[\\\\/](?!@nestjs[\\\\/](jwt|config)[\\\\/])"
+    ],
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],

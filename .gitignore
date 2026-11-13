@@ -38,6 +38,39 @@ lerna-debug.log*
 .env.*
 !.env.example
 
+# Configuración privada y credenciales locales
+*.local
+*.local.*
+docker-compose.override.yml
+docker-compose.override.yaml
+compose.override.yml
+compose.override.yaml
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Respaldos y bases de datos locales
+backups/
+respaldos/
+jm-hielos-respaldos/
+*.sql
+*.sql.*
+*.dump
+*.dump.*
+*.backup
+*.backup.*
+*.bak
+*.db
+*.db-*
+*.sqlite*
+
+# Conservar las migraciones SQL de Prisma
+!api/prisma/migrations/**/migration.sql
+
+# Capturas con datos privados
+/docs/capturas-privadas/
+
 # temp directory
 .temp
 .tmp
@@ -47,5 +80,9 @@ pids
 *.pid
 *.seed
 *.pid.lock
+
+# Postman - configuración y archivos locales
+.postman/
+postman/
 
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json

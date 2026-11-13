@@ -1,0 +1,210 @@
+{
+  "info": {
+    "name": "JM Hielos · MVP financiero",
+    "description": "Colección local. Completar credenciales, UUID, fechas e importes reales. El login guarda el JWT localmente. Repetir una clave conserva la operación; cambiar los datos con la misma clave devuelve 409. Esta colección no se ejecuta automáticamente.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:3000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "cuentaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categoriaIngresoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categoriaEgresoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "desde",
+      "value": "2026-11-01",
+      "type": "string"
+    },
+    {
+      "key": "hasta",
+      "value": "2026-11-11",
+      "type": "string"
+    },
+    {
+      "key": "fechaEfectiva",
+      "value": "2026-11-10T12:00:00-03:00",
+      "type": "string"
+    },
+    {
+      "key": "claveCobro",
+      "value": "mvp-cobro-001",
+      "type": "string"
+    },
+    {
+      "key": "clavePago",
+      "value": "mvp-pago-001",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login exitoso', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) pm.collectionVariables.set('token', pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Cuentas activas",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/cuentas-financieras"
+      }
+    },
+    {
+      "name": "3. Cuentas inactivas",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/cuentas-financieras/inactivas"
+      }
+    },
+    {
+      "name": "4. Categorías activas",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/categorias-flujo"
+      }
+    },
+    {
+      "name": "5. Categorías inactivas",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/categorias-flujo/inactivas"
+      }
+    },
+    {
+      "name": "6. Cobro manual (ADMIN)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/operaciones-financieras/cobros-manuales",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"claveIdempotencia\": \"{{claveCobro}}\",\n  \"cuentaId\": \"{{cuentaId}}\",\n  \"categoriaId\": \"{{categoriaIngresoId}}\",\n  \"importe\": \"15000.00\",\n  \"fechaEfectiva\": \"{{fechaEfectiva}}\",\n  \"detalle\": \"Cobro manual: reemplazar por detalle real\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "7. Pago manual (ADMIN)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/operaciones-financieras/pagos-manuales",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"claveIdempotencia\": \"{{clavePago}}\",\n  \"cuentaId\": \"{{cuentaId}}\",\n  \"categoriaId\": \"{{categoriaEgresoId}}\",\n  \"importe\": \"2500.50\",\n  \"fechaEfectiva\": \"{{fechaEfectiva}}\",\n  \"detalle\": \"Pago manual: reemplazar por detalle real\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "8. Cash Flow consolidado",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/cash-flow?desde={{desde}}&hasta={{hasta}}"
+      }
+    },
+    {
+      "name": "9. Cash Flow por cuenta",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/cash-flow?desde={{desde}}&hasta={{hasta}}&cuentaId={{cuentaId}}"
+      }
+    }
+  ]
+}

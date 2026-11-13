@@ -1,0 +1,668 @@
+{
+  "info": {
+    "name": "JM Hielos — Insumos, producción y stock",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Revisar docs/inventario-produccion.md y la migración antes de usar. Usar base/productos exclusivos de prueba. No ejecutar conteos sobre inventario operativo. No contiene credenciales. Las claves y fecha se conservan para reintentos; limpiar la clave correspondiente al comenzar otra operación."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get(\"fechaEfectiva\")) pm.collectionVariables.set(\"fechaEfectiva\", new Date().toISOString());"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "proveedorId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "responsableId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "cuentaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categoriaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "insumoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "presentacionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "compraId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "codigoLote",
+      "value": "LOTE-POSTMAN-001",
+      "type": "string"
+    },
+    {
+      "key": "comprobante",
+      "value": "INS-POSTMAN-001",
+      "type": "string"
+    },
+    {
+      "key": "nombreInsumo",
+      "value": "Bolsas vacías 3 kg - prueba",
+      "type": "string"
+    },
+    {
+      "key": "fechaEfectiva",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "opConteo",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "claveCompra",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "claveTraslado",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "claveLote",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "clavePerdida",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "claveDevolucion",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "claveConteo",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "claveAjuste",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "claveConteoInsumo",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "clavePago",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Catálogo: Productos (copiar productoId de prueba)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/productos",
+        "description": ""
+      }
+    },
+    {
+      "name": "Catálogo: Usuarios (copiar responsableId)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/usuarios",
+        "description": ""
+      }
+    },
+    {
+      "name": "Catálogo: Proveedores (copiar proveedorId)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/proveedores",
+        "description": ""
+      }
+    },
+    {
+      "name": "Catálogo: Cuentas (opcional para pagos)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/cuentas-financieras",
+        "description": ""
+      }
+    },
+    {
+      "name": "Catálogo: Categorías EGRESO (opcional para pagos)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/categorias-flujo",
+        "description": ""
+      }
+    },
+    {
+      "name": "01 Crear insumo (inicia factor 100 y mínimo 300)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/inventario/insumos",
+        "description": "",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"{{nombreInsumo}}\",\n  \"tipo\": \"BOLSA\",\n  \"unidad\": \"unidad\",\n  \"productoId\": \"{{productoId}}\",\n  \"presentacion\": {\n    \"nombre\": \"Paquete\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Insumo creado\", () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) { const r = pm.response.json(); pm.collectionVariables.set(\"insumoId\", r.id); pm.collectionVariables.set(\"presentacionId\", r.presentaciones[0].id); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Comprar cuatro paquetes sin pago",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/inventario/compras",
+        "description": "",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"claveIdempotencia\": \"{{claveCompra}}\",\n  \"fechaEfectiva\": \"{{fechaEfectiva}}\",\n  \"motivo\": \"Compra exclusiva de prueba Postman\",\n  \"proveedorId\": \"{{proveedorId}}\",\n  \"comprobante\": \"{{comprobante}}\",\n  \"detalles\": [\n    {\n      \"presentacionId\": \"{{presentacionId}}\",\n      \"paquetes\": 4,\n      \"costoTotal\": \"4000.00\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get(\"claveCompra\")) pm.collectionVariables.set(\"claveCompra\", pm.variables.replaceIn(\"{{$guid}}\"));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Compra confirmada\", () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) pm.collectionVariables.set(\"compraId\", pm.response.json().datos.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Consultar existencias después de comprar",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/inventario/insumos",
+        "description": ""
+      }
+    },
+    {
+      "name": "04 Abrir un paquete y trasladar a producción",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/inventario/traslados",
+        "description": "",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"claveIdempotencia\": \"{{claveTraslado}}\",\n  \"fechaEfectiva\": \"{{fechaEfectiva}}\",\n  \"motivo\": \"Apertura de un paquete de prueba\",\n  \"presentacionId\": \"{{presentacionId}}\",\n  \"paquetes\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get(\"claveTraslado\")) pm.collectionVariables.set(\"claveTraslado\", pm.variables.replaceIn(\"{{$guid}}\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Consultar alerta y 300 depósito / 100 producción",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/inventario/insumos",
+        "description": ""
+      }
+    },
+    {
+      "name": "06 Registrar lote de 10 aptas (esperadas 100)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/inventario/produccion",
+        "description": "",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"claveIdempotencia\": \"{{claveLote}}\",\n  \"fechaEfectiva\": \"{{fechaEfectiva}}\",\n  \"motivo\": \"Producción exclusiva de prueba Postman\",\n  \"codigo\": \"{{codigoLote}}\",\n  \"productoId\": \"{{productoId}}\",\n  \"presentacionBolsaId\": \"{{presentacionId}}\",\n  \"responsableId\": \"{{responsableId}}\",\n  \"ayudantesIds\": [],\n  \"bolsasUsadas\": 10,\n  \"bolsasRotas\": 0,\n  \"cantidadApta\": 10,\n  \"cantidadEsperada\": 100,\n  \"hieloDescartadoKg\": \"0\",\n  \"otrosConsumos\": []\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get(\"claveLote\")) pm.collectionVariables.set(\"claveLote\", pm.variables.replaceIn(\"{{$guid}}\"));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Lote confirmado\", () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) pm.test(\"Quedan 90 bolsas vacías\", () => pm.expect(pm.response.json().datos.bolsasSobrantes).to.eql(\"90\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Verificar 90 bolsas vacías disponibles",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/inventario/insumos",
+        "description": ""
+      }
+    },
+    {
+      "name": "08 Verificar stock terminado (+10)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/inventario/stock",
+        "description": ""
+      }
+    },
+    {
+      "name": "09 Pérdida de 2 bolsas terminadas",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/inventario/stock/movimientos",
+        "description": "",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"claveIdempotencia\": \"{{clavePerdida}}\",\n  \"fechaEfectiva\": \"{{fechaEfectiva}}\",\n  \"motivo\": \"Pérdida verificada en prueba\",\n  \"productoId\": \"{{productoId}}\",\n  \"accion\": \"PERDIDA\",\n  \"cantidad\": 2\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get(\"clavePerdida\")) pm.collectionVariables.set(\"clavePerdida\", pm.variables.replaceIn(\"{{$guid}}\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Devolución de 1 bolsa apta",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/inventario/stock/movimientos",
+        "description": "",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"claveIdempotencia\": \"{{claveDevolucion}}\",\n  \"fechaEfectiva\": \"{{fechaEfectiva}}\",\n  \"motivo\": \"Retorno apto verificado en prueba\",\n  \"productoId\": \"{{productoId}}\",\n  \"accion\": \"DEVOLUCION\",\n  \"cantidad\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get(\"claveDevolucion\")) pm.collectionVariables.set(\"claveDevolucion\", pm.variables.replaceIn(\"{{$guid}}\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 Conteo físico de 7 bolsas (solo producto de prueba)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/inventario/stock/movimientos",
+        "description": "",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"claveIdempotencia\": \"{{claveConteo}}\",\n  \"fechaEfectiva\": \"{{fechaEfectiva}}\",\n  \"motivo\": \"Conteo físico exclusivo de prueba\",\n  \"productoId\": \"{{productoId}}\",\n  \"accion\": \"CONTEO\",\n  \"cantidad\": 7\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get(\"claveConteo\")) pm.collectionVariables.set(\"claveConteo\", pm.variables.replaceIn(\"{{$guid}}\"));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Conteo confirmado\", () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) pm.collectionVariables.set(\"opConteo\", pm.response.json().operacionId);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 Ajuste +1 vinculado al conteo",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/inventario/stock/movimientos",
+        "description": "",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"claveIdempotencia\": \"{{claveAjuste}}\",\n  \"fechaEfectiva\": \"{{fechaEfectiva}}\",\n  \"motivo\": \"Corrección justificada del conteo de prueba\",\n  \"productoId\": \"{{productoId}}\",\n  \"accion\": \"AJUSTE\",\n  \"cantidad\": 1,\n  \"corrigeOperacionId\": \"{{opConteo}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get(\"claveAjuste\")) pm.collectionVariables.set(\"claveAjuste\", pm.variables.replaceIn(\"{{$guid}}\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 Historial y diferencias",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/inventario/movimientos",
+        "description": ""
+      }
+    },
+    {
+      "name": "14 Bajar mínimo a 250 (desactiva alerta con 300)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/inventario/insumos/{{insumoId}}",
+        "description": "",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"stockMinimo\": \"250\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "15 Presentación configurable de 80 (conserva anteriores)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/inventario/insumos/{{insumoId}}/presentaciones",
+        "description": "",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Paquete 80\",\n  \"factor\": \"80\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "16 Conteo de insumos en producción: 85",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/inventario/insumos/movimientos",
+        "description": "",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"claveIdempotencia\": \"{{claveConteoInsumo}}\",\n  \"fechaEfectiva\": \"{{fechaEfectiva}}\",\n  \"motivo\": \"Conteo de bolsas vacías de prueba\",\n  \"presentacionId\": \"{{presentacionId}}\",\n  \"ubicacion\": \"PRODUCCION\",\n  \"accion\": \"CONTEO\",\n  \"cantidad\": \"85\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get(\"claveConteoInsumo\")) pm.collectionVariables.set(\"claveConteoInsumo\", pm.variables.replaceIn(\"{{$guid}}\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17 Pago real parcial OPCIONAL (requiere cuenta y categoría)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/inventario/compras/{{compraId}}/pagos",
+        "description": "Ejecutar únicamente con cuenta y categoría de prueba configuradas. Genera egreso financiero real.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"claveIdempotencia\": \"{{clavePago}}\",\n  \"fechaEfectiva\": \"{{fechaEfectiva}}\",\n  \"motivo\": \"Pago parcial de compra de prueba\",\n  \"pago\": {\n    \"cuentaId\": \"{{cuentaId}}\",\n    \"categoriaId\": \"{{categoriaId}}\",\n    \"importe\": \"1000.00\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get(\"clavePago\")) pm.collectionVariables.set(\"clavePago\", pm.variables.replaceIn(\"{{$guid}}\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18 Ver compras y saldo pendiente",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/inventario/compras",
+        "description": ""
+      }
+    }
+  ]
+}
